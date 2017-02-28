@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,8 +39,8 @@ public class WuziqiPanel extends View {
     private float ratioPieceOfLineHeight = 3 * 1.0f / 4;
 
     // 点击时候获取白子跟黑子的集合
-    private List<Point> mWhiteArray = new ArrayList<>();
-    private List<Point> mBlickArray = new ArrayList<>();
+    private ArrayList<Point> mWhiteArray = new ArrayList<>();
+    private ArrayList<Point> mBlickArray = new ArrayList<>();
 
     // 声明一个表示当前棋子的变量
     private boolean mIsWhite = true;
@@ -52,7 +54,7 @@ public class WuziqiPanel extends View {
 
     public WuziqiPanel(Context context, AttributeSet attrs) {
         super(context, attrs);
-        setBackgroundColor(0x44ff0000);
+//        setBackgroundColor(0x44ff0000);
         init();
     }
 
@@ -169,15 +171,20 @@ public class WuziqiPanel extends View {
     }
 
     // 是否五子连珠
-    private boolean checkFiveInLine(List<Point> Points) {
+    private boolean checkFiveInLine(List<Point> points) {
 
-        for (Point p : Points) {
+        for (Point p : points) {
             int x = p.x;
             int y = p.y;
 
-            // 横向胜利
-            boolean win = checkHorizontal(x, y, Points);
-
+            boolean win = checkHorizontal(x, y, points);
+            if (win) return true;
+            win = checkVetical(x, y, points);
+            if (win) return true;
+            win = checkLeftDiagonal(x, y, points);
+            if (win) return true;
+            win = checkRightDiagonal(x, y, points);
+            if (win) return true;
 
         }
 
@@ -190,9 +197,9 @@ public class WuziqiPanel extends View {
         int count = 1;
 
         // 左边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
             // x 轴减1 之后是否还有同类棋子没有就break
-            if (points.contains(new Point(x - 1, y))) {
+            if (points.contains(new Point(x - i, y))) {
                 count++;
             } else {
                 break;
@@ -202,8 +209,8 @@ public class WuziqiPanel extends View {
         if (count == MAX_COUNT_IN_LINE) return true;
 
         // 右边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
-            if (points.contains(new Point(x + 1, y))) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
+            if (points.contains(new Point(x + i, y))) {
                 count++;
             } else {
                 break;
@@ -221,7 +228,7 @@ public class WuziqiPanel extends View {
         int count = 1;
 
         // 上边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
             if (points.contains(new Point(x, y - i))) {
                 count++;
             } else {
@@ -232,7 +239,7 @@ public class WuziqiPanel extends View {
         if (count == MAX_COUNT_IN_LINE) return true;
 
         // 下边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
             if (points.contains(new Point(x, y + i))) {
                 count++;
             } else {
@@ -246,13 +253,12 @@ public class WuziqiPanel extends View {
     }
 
     // 左斜胜利逻辑
-    private boolean checkVetical(int x, int y, List<Point> points) {
+    private boolean checkLeftDiagonal(int x, int y, List<Point> points) {
 
         int count = 1;
 
-        // 上边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
-            if (points.contains(new Point(x, y - i))) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
+            if (points.contains(new Point(x - i, y + i))) {
                 count++;
             } else {
                 break;
@@ -261,9 +267,8 @@ public class WuziqiPanel extends View {
 
         if (count == MAX_COUNT_IN_LINE) return true;
 
-        // 下边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
-            if (points.contains(new Point(x, y + i))) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
+            if (points.contains(new Point(x + i, y - i))) {
                 count++;
             } else {
                 break;
@@ -277,13 +282,12 @@ public class WuziqiPanel extends View {
 
 
     // 右斜胜利逻辑
-    private boolean checkVetical(int x, int y, List<Point> points) {
+    private boolean checkRightDiagonal(int x, int y, List<Point> points) {
 
         int count = 1;
 
-        // 上边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
-            if (points.contains(new Point(x, y - i))) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
+            if (points.contains(new Point(x - i, y - i))) {
                 count++;
             } else {
                 break;
@@ -292,9 +296,8 @@ public class WuziqiPanel extends View {
 
         if (count == MAX_COUNT_IN_LINE) return true;
 
-        // 下边
-        for (int i = 0; i < MAX_COUNT_IN_LINE; i++) {
-            if (points.contains(new Point(x, y + i))) {
+        for (int i = 1; i < MAX_COUNT_IN_LINE; i++) {
+            if (points.contains(new Point(x + i, y + i))) {
                 count++;
             } else {
                 break;
@@ -373,6 +376,41 @@ public class WuziqiPanel extends View {
 
 
         return new Point((int) (x / mLineHeigt), (int) (y / mLineHeigt));
+    }
+
+
+    // View的存储与恢复
+
+    private static final String INSTANCE = "instance";
+    private static final String INSTANCE_GAME_OVER = "instance_game_over";
+    private static final String INSTANCE_WHITE_ARRAY = "instance_white_array";
+    private static final String INSTANCE_BLACK_ARRAY = "instance_black_array";
+
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable(INSTANCE, super.onSaveInstanceState());
+        bundle.putBoolean(INSTANCE_GAME_OVER, mIsGameOver);
+        bundle.putParcelableArrayList(INSTANCE_WHITE_ARRAY, mWhiteArray);
+        bundle.putParcelableArrayList(INSTANCE_BLACK_ARRAY, mBlickArray);
+        return bundle;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+
+        if (state instanceof Bundle) {
+
+            Bundle bundle = (Bundle) state;
+            mIsGameOver = bundle.getBoolean(INSTANCE_GAME_OVER);
+            mWhiteArray = bundle.getParcelableArrayList(INSTANCE_WHITE_ARRAY);
+            mBlickArray = bundle.getParcelableArrayList(INSTANCE_BLACK_ARRAY);
+            super.onRestoreInstanceState(bundle.getParcelable(INSTANCE));
+            return;
+        }
+
+        super.onRestoreInstanceState(state);
     }
 }
 

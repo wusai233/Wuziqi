@@ -9,6 +9,7 @@
 
 
     <com.example.administrator.wuziqi.WuziqiPanel
+        android:id="@+id/id_wuziqi"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_centerInParent="true" />
